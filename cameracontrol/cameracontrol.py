@@ -392,6 +392,7 @@ class ProcessImage:
 
     def raw2rgb_ximu(self, image_mosaic, metadata, demosaic="dw"):
         """
+        Transforming raw image in RGB standard for the prototype (xiMU CMOS sensor).
 
         :param image_mosaic:
         :param metadata:
@@ -417,6 +418,7 @@ class ProcessImage:
 
     def raw2rgb_insta360(self, image_mosaic, metadata, demosaic="dw"):
         """
+        Transforming raw image in RGB standard for the consumer-graded camera (Insta360 ONE).
 
         :param image_mosaic:
         :param metadata:
@@ -460,6 +462,12 @@ class ProcessImage:
 
     @staticmethod
     def CFApattern_insta360(array):
+        """
+        Returning CFA pattern array of camera Insta360 ONE from metadata.
+
+        :param array: Array corresponding to exif tage of CFA pattern.
+        :return: Matrix of bayer CFA pattern.
+        """
         cfastr = ""
         exifvalues = {0: "R", 1: "G", 2: "B"}
         for i in array:
@@ -497,7 +505,7 @@ class ProcessImage:
 
     def angularcoordinates(self, imagesize, image_center, fit_params):
         """
-        Function that rerturn the zenith and azimuth coordinates of each pixels.
+        Function that return the zenith and azimuth coordinates of each pixels.
 
         :param imagesize: WARNING!!! (row, column) so (y, x) as the convention for image in python
         :param image_center: Image center coordinate numpy array [x, y]
@@ -521,19 +529,23 @@ class ProcessImage:
 
     @staticmethod
     def gain_linear(gain_db):
+        """
+        Function to return the gain in linear value.
+
+        :param gain_db: gain [db]
+        :return: linear gain
+        """
         return 10**(gain_db/20)
 
     @staticmethod
     def exposure_second(exposure_us):
+        """
+        Function transforming exposure time in us to exposure time in s.
+
+        :param exposure_us: exposure time [us]
+        :return: exposure time [s]
+        """
         return exposure_us*1E-6
-
-
-
-    def gain_normalization(self):
-        return
-
-    def exposuretime_normalization(self):
-        return
 
     def polynomial_fit(self, x, a0, a1, a2, a3, a4):
         return a0 + a1*x + a2*x**2 + a3*x**3 + a4*x**4
@@ -551,6 +563,14 @@ class ProcessImage:
 
     @staticmethod
     def saveTIFF_xiMU(path, rawimage, metadata):
+        """
+        Saving tiff image to folder.
+
+        :param path:
+        :param rawimage:
+        :param metadata:
+        :return:
+        """
         if len(rawimage.shape) == 2:
             tifffile.imwrite(path, rawimage.astype(int), metadata=metadata)
         else:
