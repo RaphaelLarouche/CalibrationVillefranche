@@ -44,14 +44,12 @@ if __name__ == "__main__":
     sensor_rsr_data["B"] = sensor_rsr_data["B"] / np.nanmax(sensor_rsr_data["B"])
 
     sensor_rsr_data = sensor_rsr_data.dropna()
-    print(sensor_rsr_data)
 
     # Incident power with gentec powermeter
     powerdata = pandas.read_excel(path + "/power_data.xlsx")
 
-    # Wavelength
+    # Wavelength of spectrophotometer experiment
     wl = np.arange(400, 710, 10)
-    print(wl)
 
     # Finding centroid from green channel at 520 nm
     ind520 = 12
@@ -144,7 +142,7 @@ if __name__ == "__main__":
     SP = DN_avg/pw[:, None]
     RSP = SP/np.max(SP, axis=0)
 
-    # Interpolation
+    # Interpolation at interval of 1 nm between 400 and 700 nm
     wl_interp = np.arange(400, 701, 1)
 
     RSP_interp = np.empty((len(wl_interp), 4), dtype=np.float32)
@@ -152,9 +150,6 @@ if __name__ == "__main__":
     RSP_interp[:, 1] = np.interp(wl_interp, wl, RSP[:, 0])
     RSP_interp[:, 2] = np.interp(wl_interp, wl, RSP[:, 1])
     RSP_interp[:, 3] = np.interp(wl_interp, wl, RSP[:, 2])
-
-    print(wl_interp)
-    print(RSP_interp)
 
     # Finding peaks and FWHM of experimental results
     arg_peaks = np.argmax(RSP_interp[:, 1:4], axis=0)
@@ -221,9 +216,14 @@ if __name__ == "__main__":
     fig5 = plt.figure()
     ax5 = fig5.add_subplot(111)
 
-    ax5.plot(RSP_interp[:, 0], RSP_interp[:, 1], "r")
-    ax5.plot(RSP_interp[:, 0], RSP_interp[:, 2], "g")
-    ax5.plot(RSP_interp[:, 0], RSP_interp[:, 3], "b")
+    ax5.plot(wl, RSP[:, 0], "r")
+    ax5.plot(wl, RSP[:, 1], "g")
+    ax5.plot(wl, RSP[:, 2], "b")
+
+    ax5.plot(RSP_interp[:, 0], RSP_interp[:, 1], "ro")
+    ax5.plot(RSP_interp[:, 0], RSP_interp[:, 2], "go")
+    ax5.plot(RSP_interp[:, 0], RSP_interp[:, 3], "bo")
+
     ax5.plot(wl_peaks, np.array([1, 1, 1]), "x", color="grey")
 
     ax5.hlines(*results_half_r[1:], linestyles="-.", color="grey")

@@ -527,6 +527,30 @@ class ProcessImage:
 
         return zenith, azimuth
 
+    def angularcoordinates_forcedzero(self, imagesize, image_center, fit_params):
+        """
+        Function that return the zenith and azimuth coordinates of each pixels using polynomial fit FORCED to zero.
+
+        :param imagesize: WARNING!!! (row, column) so (y, x) as the convention for image in python
+        :param image_center: Image center coordinate numpy array [x, y]
+        :param fit_params: Polynomial coefficients
+        :return: zenith and azimuth coordinates in tuple format (zenith, azimuth)
+        """
+        xcenter, ycenter = image_center[0], image_center[1]
+        ximsize, yimsize = imagesize[1], imagesize[0]
+
+        xcoord, ycoord = np.meshgrid(np.arange(0, int(ximsize)), np.arange(0, int(yimsize)))
+
+        new_xcoord, new_ycoord = xcoord - xcenter, ycoord - ycenter
+        radi = np.sqrt(new_xcoord ** 2 + new_ycoord ** 2)
+
+        zenith = self.polynomial_fit_forcedzero(radi, *fit_params)
+
+        azimuth = np.degrees(np.arctan2(new_ycoord, new_xcoord))
+        azimuth[azimuth < 0] = azimuth[azimuth < 0] + 360
+
+        return zenith, azimuth
+
     @staticmethod
     def gain_linear(gain_db):
         """

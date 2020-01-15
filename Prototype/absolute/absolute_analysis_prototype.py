@@ -37,11 +37,15 @@ if __name__ == "__main__":
 
     if answer == "2":
 
-        # binning 2x2 -- uniquement 4x4 pour le moment
+        # binning 2x2
         impath = genpath_kingston + "Prototype/Absolute/absolute_proto_20191128_2x2/absolute_proto_20191128_2x2_17000us"
 
         # Open geometric calibration
-        geocalib = np.load(os.path.dirname(os.getcwd()) + "/geometric/geometric_calibrationfiles_air/geo_calibration_results_2x2_20191115.npz")
+        #geocalib = np.load(os.path.dirname(os.getcwd()) + "/geometric/geometric_calibrationfiles_air/geo_calibration_results_2x2_20191115.npz")
+        #geocalib = np.load(os.path.dirname(
+            #os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20191211_2152.npz")
+        geocalib = np.load(os.path.dirname(os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20191211_1714.npz")
+
 
     images_path = glob.glob(impath + "/IMG_*tif")
     ambiance_path = glob.glob(impath + "/DARK_*.tif")
@@ -52,11 +56,9 @@ if __name__ == "__main__":
     # Opening ambiance image
     ambiant, metambiant = processing.readTIFF_xiMU(ambiance_path[0])
 
-    print(metambiant)
-
     # ___________________________________________________________________________
     # Angular coordinates of each pixel
-    zenith, azimuth = processing.angularcoordinates(geocalib["imagesize"], geocalib["centerpoint"], geocalib["fitparams"])
+    zenith, azimuth = processing.angularcoordinates_forcedzero(geocalib["imagesize"], geocalib["centerpoint"], geocalib["fitparams"])
 
     zenith = processing.dwnsampling(zenith, "BGGR")
     azimuth = processing.dwnsampling(azimuth, "BGGR")
@@ -66,48 +68,57 @@ if __name__ == "__main__":
     # ___________________________________________________________________________
     # Mean radiance in each channel
 
-    # Opening spectral response of camera
+    # Opening theoretical spectral response of camera
     sensor_rsr_data = pandas.read_csv(genpath + "cameracontrol/MT9P031_RSR/MT9P031.csv", sep=";")
     sensor_rsr_data["R"] = sensor_rsr_data["R"] / np.nanmax(sensor_rsr_data["R"])
     sensor_rsr_data["G"] = sensor_rsr_data["G"] / np.nanmax(sensor_rsr_data["G"])
     sensor_rsr_data["B"] = sensor_rsr_data["B"] / np.nanmax(sensor_rsr_data["B"])
 
     sensor_rsr_data = sensor_rsr_data.dropna()
-    print(sensor_rsr_data)
+
+    # Opening measured spectral response of camera
+    sensor_rsr_exp = pandas.read_csv(genpath +
+                                     "Prototype/spectral_response/spectral_response_files/"
+                                     "spectral_response_20191206_164004.csv", sep=",")
+    sensor_rsr_exp = sensor_rsr_exp[::10]
 
     # Opening spectral irradiance of spectralon plate
     irr_data = pandas.read_excel(genpath + "files/FEL_GS_1015_opt.xlsx")
-    irr_data = irr_data.where((400 <= irr_data["wavelength [nm]"]) & (irr_data["wavelength [nm]"] <= 850))
+    irr_data = irr_data.where((400 <= irr_data["wavelength [nm]"]) & (irr_data["wavelength [nm]"] <= 700))
     irr_data = irr_data.dropna()
 
     reflectance_data = pandas.read_csv(genpath + "files/spectralon.txt", delimiter="\t")
-    reflectance_data = reflectance_data.where((400 <= reflectance_data["Wl"]) & (reflectance_data["Wl"] <= 850))
+    reflectance_data = reflectance_data.where((400 <= reflectance_data["Wl"]) & (reflectance_data["Wl"] <= 700))
     reflectance_data = reflectance_data.dropna()
     reflectance_data = reflectance_data[::10]
 
-    # Calcul of irradiance at 179.9 cm
-    lamp_distance = 179.9
-
-    irradiance = irr_data["absolute irradiance [mW m-2 nm-1]"] * (50/lamp_distance)**2
-
-    # Calcul of radiance
-    radiance = (irradiance * np.array(reflectance_data["R"]) * 0.001)/np.pi  # W m-2 sr-1 nm-1
-
     # Interpolation or sensor relative spectral response
-    print(radiance.shape)
-
-    sensor_rsr_inter = np.empty((radiance.shape[0], 3))
+    sensor_rsr_inter = np.empty((len(irr_data["wavelength [nm]"]), 3))
     sensor_rsr_inter[:, 0] = processing.interpolation(irr_data["wavelength [nm]"], (sensor_rsr_data["RW"], sensor_rsr_data["R"]))
     sensor_rsr_inter[:, 1] = processing.interpolation(irr_data["wavelength [nm]"], (sensor_rsr_data["GW"], sensor_rsr_data["G"]))
     sensor_rsr_inter[:, 2] = processing.interpolation(irr_data["wavelength [nm]"], (sensor_rsr_data["BW"], sensor_rsr_data["B"]))
 
     # Bandpass
-    bwr = np.trapz(sensor_rsr_inter[:, 0], x=irr_data["wavelength [nm]"])
-    bwg = np.trapz(sensor_rsr_inter[:, 1], x=irr_data["wavelength [nm]"])
-    bwb = np.trapz(sensor_rsr_inter[:, 2], x=irr_data["wavelength [nm]"])
+    bwr = np.trapz(sensor_rsr_exp.iloc[:, 1].values, x=irr_data["wavelength [nm]"])
+    bwg = np.trapz(sensor_rsr_exp.iloc[:, 2].values, x=irr_data["wavelength [nm]"])
+    bwb = np.trapz(sensor_rsr_exp.iloc[:, 3].values, x=irr_data["wavelength [nm]"])
+
+    print(bwr)
+    print(bwg)
+    print(bwb)
+
+    # ___________________________________________________________________________
+    # RADIANCE
+    # Irradiance at 179.9 cm
+    lamp_distance = 179.9
+    irradiance = irr_data["absolute irradiance [mW m-2 nm-1]"] * (50/lamp_distance)**2
+
+    # Calcul of radiance
+    radiance = (irradiance * np.array(reflectance_data["R"]) * 0.001)/np.pi  # W m-2 sr-1 nm-1
 
     # Convoluted radiance
-    radiance_conv = sensor_rsr_inter * np.tile(np.array(radiance), (3, 1)).T
+    print(sensor_rsr_exp.iloc[:, 1:4].values)
+    radiance_conv = sensor_rsr_exp.iloc[:, 1:4].values * np.tile(np.array(radiance), (3, 1)).T
 
     # Integration for average radiance in each band
     intr = np.trapz(radiance_conv[:, 0], x=irr_data["wavelength [nm]"]) / bwr
@@ -132,6 +143,8 @@ if __name__ == "__main__":
         # Reading image
         im_op, met_op = processing.readTIFF_xiMU(path)
         im_op -= ambiant
+
+        print(met_op)
 
         # Downsamplig
         im_dws = processing.dwnsampling(im_op, "BGGR")
@@ -179,13 +192,20 @@ if __name__ == "__main__":
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111)
 
-    ax1.plot(sensor_rsr_data["RW"], sensor_rsr_data["R"], 'r')
-    ax1.plot(sensor_rsr_data["GW"], sensor_rsr_data["G"], 'g')
-    ax1.plot(sensor_rsr_data["BW"], sensor_rsr_data["B"], 'b')
+    ax1.plot(sensor_rsr_data["RW"], sensor_rsr_data["R"], 'k')
+    ax1.plot(sensor_rsr_data["GW"], sensor_rsr_data["G"], 'k')
+    ax1.plot(sensor_rsr_data["BW"], sensor_rsr_data["B"], 'k')
+
+    ax1.plot(sensor_rsr_exp["# wl"], sensor_rsr_exp["R"], marker="o", linestyle="-.", color="gray")
+    ax1.plot(sensor_rsr_exp["# wl"], sensor_rsr_exp["G"], marker="o", linestyle="-.", color="gray")
+    ax1.plot(sensor_rsr_exp["# wl"], sensor_rsr_exp["B"], marker="o", linestyle="-.", color="gray")
 
     ax1.plot(irr_data["wavelength [nm]"], sensor_rsr_inter[:, 0], 'ro')
     ax1.plot(irr_data["wavelength [nm]"], sensor_rsr_inter[:, 1], 'go')
     ax1.plot(irr_data["wavelength [nm]"], sensor_rsr_inter[:, 2], 'bo')
+
+    ax1.set_xlabel("Wavelength [nm]")
+    ax1.set_ylabel("Relative spectral response")
 
     # Figure imagetot
     fig2, ax2 = plt.subplots(1, 3)
@@ -198,5 +218,14 @@ if __name__ == "__main__":
 
     ax2[2].imshow(imtot[:, :, 2])
     ax2[2].contour(zenith[:, :, 2] < angular_thresh, linewidths=2)
+
+    # Figure radiance convolution
+    fig3 = plt.figure()
+    ax3 = fig3.add_subplot(111)
+
+    ax3.plot(irr_data["wavelength [nm]"], radiance_conv, marker="o", linestyle="-.")
+
+    ax3.set_xlabel("Wavelength [nm]")
+    ax3.set_ylabel("Radiance convoluted")
 
     plt.show()

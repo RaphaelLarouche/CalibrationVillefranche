@@ -141,7 +141,6 @@ if __name__ == "__main__":
 
     ax2.legend(loc="best")
 
-
     # ___________________________________________________________________________
     # Saving geometric calibration data
     while True:
@@ -155,13 +154,15 @@ if __name__ == "__main__":
         name_a = "geo_calibration_2x2_air_" + path_air[-17:-4]
         savename_a = "geometric_calibrationfiles_cb_air/" + name_a + ".npz"
 
-        np.savez(savename_a, imagesize=imsize_a, centerpoint=distortion_center_a, fitparams=popt_a)
+        np.savez(savename_a, imagesize=np.squeeze(imsize_a), centerpoint=np.squeeze(distortion_center_a),
+                 fitparams=np.squeeze(popt_a))
 
         # Water
         name_w = "geo_calibration_2x2_water_" + path_water[-17:-4]
         savename_w = "geometric_calibrationfiles_cb_water/" + name_w + ".npz"
 
-        np.savez(savename_w, imagesize=imsize_w, centerpoint=distortion_center_w, fitparams=popt_w)
+        np.savez(savename_w, imagesize=np.squeeze(imsize_w), centerpoint=np.squeeze(distortion_center_w),
+                 fitparams=np.squeeze(popt_w))
 
 
     plt.show()
