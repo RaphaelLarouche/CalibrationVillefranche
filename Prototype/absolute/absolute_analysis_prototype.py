@@ -250,14 +250,14 @@ if __name__ == "__main__":
 
         # 4x4
         if answer == "4":
-            name_4x4 = "calibration_coefficients_" + date_UTC
+            name_4x4 = "calibration_coefficients_4x4_" + date_UTC
             savename_4x4 = "calibrationfiles/" + name_4x4 + ".npz"
 
             np.savez(savename_4x4, calibration_coefficients=calibration_coeff)
 
         # 2x2
         if answer == "2":
-            name_2x2 = "calibration_coefficients_" + date_UTC
+            name_2x2 = "calibration_coefficients_2x2_" + date_UTC
             savename_2x2 = "calibrationfiles/" + name_2x2 + ".npz"
 
             np.savez(savename_2x2, calibration_coefficients=calibration_coeff)
