@@ -41,11 +41,12 @@ if __name__ == "__main__":
         impath = genpath_kingston + "Prototype/Absolute/absolute_proto_20191128_2x2/absolute_proto_20191128_2x2_17000us"
 
         # Open geometric calibration
+        # PREVIOUS CALIBRATION AT VILLEFRANCHE
         #geocalib = np.load(os.path.dirname(os.getcwd()) + "/geometric/geometric_calibrationfiles_air/geo_calibration_results_2x2_20191115.npz")
-        #geocalib = np.load(os.path.dirname(
-            #os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20191211_2152.npz")
-        geocalib = np.load(os.path.dirname(os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20191211_1714.npz")
 
+        # CALIBRATION WITH CHESSBOARD
+        #geocalib = np.load(os.path.dirname(os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20191211_2152.npz")
+        geocalib = np.load(os.path.dirname(os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20191211_1714.npz")
 
     images_path = glob.glob(impath + "/IMG_*tif")
     ambiance_path = glob.glob(impath + "/DARK_*.tif")
@@ -58,7 +59,12 @@ if __name__ == "__main__":
 
     # ___________________________________________________________________________
     # Angular coordinates of each pixel
-    zenith, azimuth = processing.angularcoordinates_forcedzero(geocalib["imagesize"], geocalib["centerpoint"], geocalib["fitparams"])
+
+    if len(geocalib["fitparams"]) == 5:
+        zenith, azimuth = processing.angularcoordinates(geocalib["imagesize"], geocalib["centerpoint"],
+                                                                   geocalib["fitparams"])
+    if len(geocalib["fitparams"]) == 4:
+        zenith, azimuth = processing.angularcoordinates_forcedzero(geocalib["imagesize"], geocalib["centerpoint"], geocalib["fitparams"])
 
     zenith = processing.dwnsampling(zenith, "BGGR")
     azimuth = processing.dwnsampling(azimuth, "BGGR")
@@ -83,11 +89,11 @@ if __name__ == "__main__":
     sensor_rsr_exp = sensor_rsr_exp[::10]
 
     # Opening spectral irradiance of spectralon plate
-    irr_data = pandas.read_excel(genpath + "files/FEL_GS_1015_opt.xlsx")
+    irr_data = pandas.read_excel("lamp_spectralon_files/FEL_GS_1015_opt.xlsx")
     irr_data = irr_data.where((400 <= irr_data["wavelength [nm]"]) & (irr_data["wavelength [nm]"] <= 700))
     irr_data = irr_data.dropna()
 
-    reflectance_data = pandas.read_csv(genpath + "files/spectralon.txt", delimiter="\t")
+    reflectance_data = pandas.read_csv("lamp_spectralon_files/spectralon.txt", delimiter="\t")
     reflectance_data = reflectance_data.where((400 <= reflectance_data["Wl"]) & (reflectance_data["Wl"] <= 700))
     reflectance_data = reflectance_data.dropna()
     reflectance_data = reflectance_data[::10]
@@ -227,5 +233,33 @@ if __name__ == "__main__":
 
     ax3.set_xlabel("Wavelength [nm]")
     ax3.set_ylabel("Radiance convoluted")
+
+    # ___________________________________________________________________________
+    # Saving geometric calibration data
+    while True:
+        inputsav = input("Do you want to save the calibration results? (y/n) : ")
+        inputsav = inputsav.lower()
+        if inputsav in ["y", "n"]:
+            break
+
+    if inputsav == "y":
+
+        index = ambiance_path[0].find("2019")
+        fileNAME = ambiance_path[0]
+        date_UTC = fileNAME[index:index + 8]
+
+        # 4x4
+        if answer == "4":
+            name_4x4 = "calibration_coefficients_" + date_UTC
+            savename_4x4 = "calibrationfiles/" + name_4x4 + ".npz"
+
+            np.savez(savename_4x4, calibration_coefficients=calibration_coeff)
+
+        # 2x2
+        if answer == "2":
+            name_2x2 = "calibration_coefficients_" + date_UTC
+            savename_2x2 = "calibrationfiles/" + name_2x2 + ".npz"
+
+            np.savez(savename_2x2, calibration_coefficients=calibration_coeff)
 
     plt.show()
