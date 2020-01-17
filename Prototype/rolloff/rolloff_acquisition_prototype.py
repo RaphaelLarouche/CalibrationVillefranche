@@ -19,10 +19,10 @@ if __name__ == "__main__":
 
     # Open geometric calibration
     geocalib = np.load(os.path.dirname(
-        os.getcwd()) + "/geometric/geometric_calibrationfiles_air/geo_calibration_results_2x2_20191115.npz")
+        os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20191211_2152.npz")
 
     camera_object = cc.TakeImage(imageformat="raw")
-    raw_image, metadata = camera_object.acquisition(exposuretime=17000, gain=0, binning="2x2", video=False)
+    raw_image, metadata = camera_object.acquisition(exposuretime=20000, gain=0, binning="2x2", video=False)
     camera_object.end()
 
 
