@@ -29,6 +29,21 @@ if __name__ == "__main__":
         """
         return a0 + a2*x**2 + a4*x**4 + a6*x**6 + a8*x**8
 
+    def disp_roll_fitcurve(popt, perr):
+        """
+        Function to print roll-off fitting results.
+
+        :param popt:
+        :param perr:
+        :return:
+        """
+        param = ["a0", "a2", "a4", "a6", "a8"]
+        a = ""
+        for i in zip(param, popt, perr):
+          a += "%s: %.4E (%.4E)\n" % i
+
+        print(a)
+
 
     # *** Code beginning ***
     processing = cc.ProcessImage()
@@ -126,6 +141,7 @@ if __name__ == "__main__":
     # Fit
     xdata = np.linspace(0, 105, 1000)
     col = ["r", "g", "b"]
+    bandnames = {"r": "red channel", "g": "green channel", "b" : "blue channel"}
     for n in range(rolloff_00.shape[1]):
         val = rolloff_00[:, n]
         ang = abs(angles)
@@ -136,7 +152,21 @@ if __name__ == "__main__":
         ang = ang[mask]
         popt, pcov = curve_fit(roff_fitcurve, ang, val)
 
-        ax3.plot(xdata, roff_fitcurve(xdata, *popt), color=col[n], alpha=0.5, label="Fit")
+        # Standard deviation of estimated parameters
+        perr = np.sqrt(np.diag(pcov))
+
+        # Display polynomial coefficients, their std and the determination coefficient
+        print(bandnames[col[n]])
+        disp_roll_fitcurve(popt, perr)
+
+        residuals = val - roff_fitcurve(ang, *popt)
+        ss_res = np.sum(residuals**2)
+        ss_tot = np.sum((val - np.mean(val))**2)
+
+        rsquared = 1 - (ss_res / ss_tot)
+        print(rsquared)
+
+        ax3.plot(xdata, roff_fitcurve(xdata, *popt), color=col[n], alpha=0.7, label="Polynomial fit {0} ($R^2$={1:.3f})".format(bandnames[col[n]], rsquared))
 
     # Figure configuration
     # Figure 1 - Image of output port of integrating sphere
@@ -160,7 +190,7 @@ if __name__ == "__main__":
 
     # Figure 3 - Roll-off with absolute angle
 
-    ax3.plot(abs(angles), rolloff_00[:, 0], "ro", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1, label="0˚ azimuth")
+    ax3.plot(abs(angles), rolloff_00[:, 0], "ro", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1)
     ax3.plot(abs(angles), rolloff_00[:, 1], "go", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1)
     ax3.plot(abs(angles), rolloff_00[:, 2], "bo", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1)
 
@@ -168,8 +198,8 @@ if __name__ == "__main__":
     ax3.errorbar(abs(angles), rolloff_00[:, 1], RSE[:, 1], linestyle="None", alpha=0.5, color="g")
     ax3.errorbar(abs(angles), rolloff_00[:, 2], RSE[:, 2], linestyle="None", alpha=0.5, color="b")
 
-    ax3.set_xlabel("Angles [˚]")
-    ax3.set_ylabel("Roll-off relative to maximum")
+    ax3.set_xlabel("Angles from optical axis [˚]")
+    ax3.set_ylabel("Roll-off")
 
     ax3.legend(loc="best")
 
