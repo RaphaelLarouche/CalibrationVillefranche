@@ -571,19 +571,80 @@ class ProcessImage:
         """
         return exposure_us*1E-6
 
-    def polynomial_fit(self, x, a0, a1, a2, a3, a4):
+    # Fit functions
+    @staticmethod
+    def polynomial_fit(x, a0, a1, a2, a3, a4):
+        """
+        Polynomial fit of degree 4. This is mostly used for geometric calibration.
+
+        :param x:
+        :param a0:
+        :param a1:
+        :param a2:
+        :param a3:
+        :param a4:
+        :return:
+        """
         return a0 + a1*x + a2*x**2 + a3*x**3 + a4*x**4
 
-    def polynomial_fit_forcedzero(self, x, a1, a2, a3, a4):
+    @staticmethod
+    def polynomial_fit_forcedzero(x, a1, a2, a3, a4):
+        """
+        Polynomial fit with a0 forced to zero. This is mostly used for geometric calibration.
+
+        :param x:
+        :param a1:
+        :param a2:
+        :param a3:
+        :param a4:
+        :return:
+        """
         return a1 * x + a2 * x ** 2 + a3 * x ** 3 + a4 * x ** 4
 
+    @staticmethod
+    def rolloff_polynomial(x, a0, a2, a4, a6, a8):
+        """
+        Polynomial fit with even coefficients for roll-off fittting.
+
+        :param x:
+        :param a0:
+        :param a2:
+        :param a4:
+        :param a6:
+        :param a8:
+        :return:
+        """
+        return a0 + a2*x**2 + a4*x**4 + a6*x**6 + a8*x**8
+
     def geometric_curvefit(self, radial_distance, angles):
-        popt, pcov = curve_fit(self.polynomial_fit, radial_distance, angles)
-        return popt, pcov
+        """
+
+        :param radial_distance:
+        :param angles:
+        :return:
+        """
+
+        return curve_fit(self.polynomial_fit, radial_distance, angles)
 
     def geometric_curvefit_forcedzero(self, radial, angles):
-        popt, pcov = curve_fit(self.polynomial_fit_forcedzero, radial, angles)
-        return popt, pcov
+        """
+
+        :param radial:
+        :param angles:
+        :return:
+        """
+        return curve_fit(self.polynomial_fit_forcedzero, radial, angles)
+
+    def rolloff_curvefit(self, angles, rolloff):
+        """
+        Curve fit of roll-off.
+
+        :param angles:
+        :param rolloff:
+        :return:
+        """
+
+        return curve_fit(self.rolloff_polynomial, angles, rolloff)
 
     @staticmethod
     def saveTIFF_xiMU(path, rawimage, metadata):
