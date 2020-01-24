@@ -14,8 +14,7 @@ if __name__ == "__main__":
     # Importation of other modules
     import cameracontrol.cameracontrol as cc
 
-    # Function
-
+    # Functions
     def roff_fitcurve(x, a0, a2, a4, a6, a8):
         """
 
@@ -78,7 +77,7 @@ if __name__ == "__main__":
     std_rolloff_00 = np.empty((len(images_path_00), 3))
     std_rolloff_00.fill(np.nan)
 
-    #angles = np.arange(-100, 105, 5)
+    #angles = np.arange(-100, 105, 5)  # changing according to data (readme)
     angles = np.arange(-105, 110, 5)
 
     fig1, ax1 = plt.subplots(1, 3)
@@ -138,10 +137,13 @@ if __name__ == "__main__":
     sroff = np.take_along_axis(rolloff_00, ind_sroff, axis=0)
     sRSE = np.take_along_axis(RSE,  ind_sroff, axis=0)
 
+    # ___________________________________________________________________________
     # Fit
     xdata = np.linspace(0, 105, 1000)
     col = ["r", "g", "b"]
-    bandnames = {"r": "red channel", "g": "green channel", "b" : "blue channel"}
+    bandnames = {"r": "red channel", "g": "green channel", "b": "blue channel"}
+    rolloff_fitparams = {}
+
     for n in range(rolloff_00.shape[1]):
         val = rolloff_00[:, n]
         ang = abs(angles)
@@ -150,24 +152,23 @@ if __name__ == "__main__":
 
         val = val[mask]
         ang = ang[mask]
-        popt, pcov = curve_fit(roff_fitcurve, ang, val)
 
-        # Standard deviation of estimated parameters
-        perr = np.sqrt(np.diag(pcov))
+        popt, pcov = processing.rolloff_curvefit(ang, val)
+        rsquared, perr = processing.rsquare(processing.rolloff_polynomial, popt, pcov, ang, val)
 
-        # Display polynomial coefficients, their std and the determination coefficient
         print(bandnames[col[n]])
         disp_roll_fitcurve(popt, perr)
-
-        residuals = val - roff_fitcurve(ang, *popt)
-        ss_res = np.sum(residuals**2)
-        ss_tot = np.sum((val - np.mean(val))**2)
-
-        rsquared = 1 - (ss_res / ss_tot)
         print(rsquared)
 
-        ax3.plot(xdata, roff_fitcurve(xdata, *popt), color=col[n], alpha=0.7, label="Polynomial fit {0} ($R^2$={1:.3f})".format(bandnames[col[n]], rsquared))
+        # Saving fit params
+        rolloff_fitparams[bandnames[col[n]]] = popt
 
+        ax3.plot(xdata, processing.rolloff_polynomial(xdata, *popt), color=col[n], alpha=0.7,
+                 label="Polynomial fit {0} ($R^2$={1:.3f})".format(bandnames[col[n]], rsquared))
+
+    print(rolloff_fitparams.values())
+
+    # ___________________________________________________________________________
     # Figure configuration
     # Figure 1 - Image of output port of integrating sphere
     imtotal_00 = np.clip(imtotal_00, 0, 2**12)
@@ -202,5 +203,20 @@ if __name__ == "__main__":
     ax3.set_ylabel("Roll-off")
 
     ax3.legend(loc="best")
+
+    # ___________________________________________________________________________
+    # Saving geometric calibration data
+    while True:
+        inputsav = input("Do you want to save the calibration results? (y/n) : ")
+        inputsav = inputsav.lower()
+        if inputsav in ["y", "n"]:
+            break
+
+    if inputsav == "y":
+        # Air
+        name = "rolloff_proto_sph_air_2x2_" + path_00[-15:-7]
+        savename = "calibrationfiles/" + name + ".npz"
+
+        np.savez(savename, rolloff_fitparams=rolloff_fitparams)
 
     plt.show()

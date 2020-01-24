@@ -647,6 +647,21 @@ class ProcessImage:
         return curve_fit(self.rolloff_polynomial, angles, rolloff)
 
     @staticmethod
+    def rsquare(func, popt, covmat, x, y):
+
+        # Std of coefficient parameters
+        perr = np.sqrt(np.diag(covmat))
+
+        # Rsquare
+        residuals = y - func(x, *popt)
+        ss_res = np.sum(residuals ** 2)
+        ss_tot = np.sum((y - np.mean(y)) ** 2)
+
+        rsquared = 1 - (ss_res / ss_tot)
+
+        return rsquared, perr
+
+    @staticmethod
     def saveTIFF_xiMU(path, rawimage, metadata):
         """
         Saving tiff image to folder.
