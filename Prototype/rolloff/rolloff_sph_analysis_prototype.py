@@ -49,9 +49,14 @@ if __name__ == "__main__":
 
     # Image directory creation
     #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20191213_2x2"
-    path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200117_2x2_02"
+    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200117_2x2_02"
+    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200225_2x2_02"
+    path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200225_2x2_90_01"
+
     images_path_00 = glob.glob(path_00 + "/IMG_*.tif")
     images_path_00.sort()
+    remove_n = 1
+    images_path_00 = images_path_00[remove_n:-remove_n]
 
     # Opening dark image
     image_path_dark = glob.glob(path_00 + "/DARK*.tif")
@@ -79,6 +84,7 @@ if __name__ == "__main__":
 
     #angles = np.arange(-100, 105, 5)  # changing according to data (readme)
     angles = np.arange(-105, 110, 5)
+    angles = angles[remove_n:-remove_n]
 
     fig1, ax1 = plt.subplots(1, 3)
 
@@ -88,6 +94,8 @@ if __name__ == "__main__":
         # Reading data
         im, met = processing.readTIFF_xiMU(path)
         im -= imdark_00
+
+        print(met["exposure_time_us"])
 
         im_dws = processing.dwnsampling(im, "BGGR", ave=True)
 
@@ -205,7 +213,7 @@ if __name__ == "__main__":
     ax3.legend(loc="best")
 
     # ___________________________________________________________________________
-    # Saving geometric calibration data
+    # Saving calibration data
     while True:
         inputsav = input("Do you want to save the calibration results? (y/n) : ")
         inputsav = inputsav.lower()

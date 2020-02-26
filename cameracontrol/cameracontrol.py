@@ -827,7 +827,7 @@ class TakeImage(ProcessImage):
 
             self.cam.get_image(self.img)
             data_raw = self.img.get_image_data_numpy()
-            data_raw = data_raw[::-1, :]  # Inversing image
+            data_raw = data_raw[::-1, :]  # versing imageIn
 
             # Metadata in dictionary
             met_dict = self.metadata_xiMU(self.img)

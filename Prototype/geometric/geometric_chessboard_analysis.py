@@ -22,8 +22,12 @@ if __name__ == "__main__":
 
     # Importation of matlab calibration files
     #path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20191211_2152.mat" # After moving CMOS !!!
-    path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20191211_1714.mat"  # Before moving CMOS !!!
-    path_water = "matlab_fisheye_calibrationfiles_cb_water/fisheyeParams_20191212_1721.mat"
+    #path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20191211_1714.mat"  # Before moving CMOS !!!
+    #path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20200218_2304.mat"
+    path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20200220_1908.mat"
+    #path_water = "matlab_fisheye_calibrationfiles_cb_water/fisheyeParams_20201212_1721.mat"
+    path_water = "matlab_fisheye_calibrationfiles_cb_water/fisheyeParams_20200225_2052.mat"
+
 
     fisheyeParams_air = scipy.io.loadmat(path_air)
     fisheyeParams_water = scipy.io.loadmat(path_water)
@@ -50,8 +54,11 @@ if __name__ == "__main__":
 
     # Path to .png image
     gen_path_img = "/Volumes/KINGSTON/Quebec/Prototype/Geometric_chess/"
-    path_img_air = gen_path_img + "geometric_proto_air/geometric_proto_air_20191211_2x2_03_ndws"  # correspond to fisheyeParams_20191211_1714.mat
-    path_img_water = gen_path_img + "geometric_proto_water/geometric_proto_20191212_2x2_06"
+    #path_img_air = gen_path_img + "geometric_proto_air/geometric_proto_air_20191211_2x2_03_ndws"  # correspond to fisheyeParams_20191211_1714.mat
+    #path_img_air = gen_path_img + "geometric_proto_air/geometric_proto_air_20200218/20200218_2x2_ndws_01"
+    path_img_air = gen_path_img + "geometric_proto_air/geometric_proto_air_20200220/20200220_2x2_ndws_01"
+    #path_img_water = gen_path_img + "geometric_proto_water/geometric_proto_20191212_2x2_06"
+    path_img_water = gen_path_img + "geometric_proto_water/geometric_proto_20200225_2x2_04"
 
     images_path_a = glob.glob(path_img_air + "/IMG_*.png")
     images_path_w = glob.glob(path_img_water + "/IMG_*.png")
@@ -123,6 +130,7 @@ if __name__ == "__main__":
     ax2 = fig2.add_subplot(111)
 
     ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_a), color="#1f77b4", linewidth=1.5, label="Chessboard calibration air")
+    ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_a) * 1/1.33, color="k", linewidth=1.5)
     ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_w), color="#ff7f0e", linewidth=1.5, label="Chessboard calibration water")
     #ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_a)*1/1.33, 'r-.')
 

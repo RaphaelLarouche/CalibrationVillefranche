@@ -76,6 +76,8 @@ if __name__ == "__main__":
 
     image_tot = np.array([])
 
+    imshape = cv2.imread(images_path[0]).shape
+
     i = 0
     for n, fname in enumerate(images_path):
 
@@ -100,7 +102,8 @@ if __name__ == "__main__":
     points[:, 0, :] = point_x
     points[:, 1, :] = point_y
 
-    image_tot = image_tot.reshape((i, 972, 1296)).T
+    image_tot = image_tot.reshape((i, imshape[0], imshape[1])).T
+    #image_tot = image_tot.reshape((i, 486, 648)).T
 
     matlab_points = matlab.double(points.tolist())
     matlab_images = matlab.double(image_tot.tolist())
@@ -110,9 +113,7 @@ if __name__ == "__main__":
 
     # ___________________________________________________________________________
     # Matlab engine for the geometric calibration
-
     eng = matlab.engine.start_matlab()
-
     if "air" in genpath:
         fisheyeParams, Imsize, DistorsionCenter, MapCoeff, theta_rho = eng.calibration_fisheye_python(matlab_images,
                                                                                                       matlab_points,

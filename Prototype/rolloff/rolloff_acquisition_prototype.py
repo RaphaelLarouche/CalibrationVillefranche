@@ -18,11 +18,13 @@ if __name__ == "__main__":
     # *** Beginning of the code ***
 
     # Open geometric calibration
-    geocalib = np.load(os.path.dirname(
-        os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20191211_2152.npz")
+    #geocalib = np.load(os.path.dirname(
+        #os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20191211_2152.npz")
+
+    geocalib = np.load(os.path.dirname(os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20200220_1908.npz")
 
     camera_object = cc.TakeImage(imageformat="raw")
-    raw_image, metadata = camera_object.acquisition(exposuretime=20000, gain=0, binning="2x2", video=False)
+    raw_image, metadata = camera_object.acquisition(exposuretime=50000, gain=0, binning="2x2", video=False)
     camera_object.end()
 
 
@@ -31,7 +33,7 @@ if __name__ == "__main__":
     imname = "/IMG_" + today.strftime("%Y%m%d_%H%M%S_UTC") + ".tif"
     #path = "/Volumes/KINGSTON/Villefranche/Prototype/Rolloff/rolloff_prototype_" + today.strftime("%Y%m%d") + imname
     path = "rolloff_proto_" + today.strftime("%Y%m%d") + imname
-    camera_object.saveTIFF_xiMU(path, raw_image, metadata)
+    #camera_object.saveTIFF_xiMU(path, raw_image, metadata)
 
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111)
