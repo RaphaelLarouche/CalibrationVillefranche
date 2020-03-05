@@ -51,7 +51,7 @@ if __name__ == "__main__":
         else:
             raise ValueError("Only raw bayer mosaic image can be saved.")
 
-    # Code beginning ___________________
+    # Code beginning _____________________________________
 
     # Ximea camera and image instance
     cam = xiapi.Camera()
