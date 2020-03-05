@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     title = ["Red channel", "Green channel", "Blue channel"]
 
-    plt.ion()
+    #plt.ion()
     # Loop
     for n, impath in enumerate(imlist):
         print("Processing image number {0}".format(n))
@@ -126,7 +126,7 @@ if __name__ == "__main__":
             mark_inset(ax2[i], axins, loc1=2, loc2=4, fc="none", ec="0", linestyle="--")
 
         #plt.pause(0.05)
-    plt.ioff()
+    #plt.ioff()
 
     # Print results
     print(DN_avg)
