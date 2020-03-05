@@ -24,13 +24,14 @@ if __name__ == "__main__":
     geocalib = np.load(os.path.dirname(os.getcwd()) + "/geometric/geometric_calibrationfiles_cb_air/geo_calibration_2x2_air_20200220_1908.npz")
 
     camera_object = cc.TakeImage(imageformat="raw")
-    raw_image, metadata = camera_object.acquisition(exposuretime=50000, gain=0, binning="2x2", video=False)
+    raw_image, metadata = camera_object.acquisition(exposuretime=3000000, gain=0, binning="2x2", video=False)
     camera_object.end()
 
 
     # Saving image
     today = datetime.datetime.utcnow()
     imname = "/IMG_" + today.strftime("%Y%m%d_%H%M%S_UTC") + ".tif"
+    #path = "/Volumes/KINGSTON/Quebec/Prototype/Spectral_response/spectral_response_2x2_20200304" + imname
     #path = "/Volumes/KINGSTON/Villefranche/Prototype/Rolloff/rolloff_prototype_" + today.strftime("%Y%m%d") + imname
     path = "rolloff_proto_" + today.strftime("%Y%m%d") + imname
     #camera_object.saveTIFF_xiMU(path, raw_image, metadata)

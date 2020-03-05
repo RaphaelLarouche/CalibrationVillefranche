@@ -748,7 +748,8 @@ class TakeImage(ProcessImage):
             prin += i + "\n"
         return prin
 
-    def metadata_xiMU(self, structure):
+    @staticmethod
+    def metadata_xiMU(structure):
         """"
         """
         if isinstance(structure, xiapi.Image):
