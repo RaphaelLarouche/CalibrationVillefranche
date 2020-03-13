@@ -3,103 +3,92 @@
 Python file for roll-off data analysis for the prototype with 2x2 binning (integrating sphere).
 """
 
-if __name__ == "__main__":
+# Importation of standard modules
+import numpy as np
+import glob
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
-    # Importation of standard modules
-    import numpy as np
-    import glob
-    import matplotlib.pyplot as plt
-    from scipy.optimize import curve_fit
-
-    # Importation of other modules
-    import cameracontrol.cameracontrol as cc
-
-    # Functions
-    def roff_fitcurve(x, a0, a2, a4, a6, a8):
-        """
-
-        :param x:
-        :param a0:
-        :param a2:
-        :param a4:
-        :param a6:
-        :param a8:
-        :return:
-        """
-        return a0 + a2*x**2 + a4*x**4 + a6*x**6 + a8*x**8
-
-    def disp_roll_fitcurve(popt, perr):
-        """
-        Function to print roll-off fitting results.
-
-        :param popt:
-        :param perr:
-        :return:
-        """
-        param = ["a0", "a2", "a4", "a6", "a8"]
-        a = ""
-        for i in zip(param, popt, perr):
-          a += "%s: %.4E (%.4E)\n" % i
-
-        print(a)
+# Importation of other modules
+import cameracontrol.cameracontrol as cc
 
 
-    # *** Code beginning ***
+# Functions
+def roff_fitcurve(x, a0, a2, a4, a6, a8):
+    """
+    Roll-off fitting function.
+
+    :param x: radial position from optical center
+    :param a0:
+    :param a2:
+    :param a4:
+    :param a6:
+    :param a8:
+    :return:
+    """
+    return a0 + a2 * x ** 2 + a4 * x ** 4 + a6 * x ** 6 + a8 * x ** 8
+
+
+def disp_roll_fitcurve(popt, perr):
+    """
+    Function to print roll-off fitting results.
+
+    :param popt:
+    :param perr:
+    :return:
+    """
+    param = ["a0", "a2", "a4", "a6", "a8"]
+    a = ""
+    for i in zip(param, popt, perr):
+        a += "%s: %.4E (%.4E)\n" % i
+
+    print(a)
+
+
+def processing_img_list(folderpath, n_remove, axe):
+
+    # Process Image class
     processing = cc.ProcessImage()
 
-    # Image directory creation
-    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20191213_2x2"
-    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200117_2x2_02"
-    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200225_2x2_02"
-    path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200225_2x2_90_01"
+    # Angles
+    angles = np.arange(-105, 110, 5)
+    angles = angles[n_remove:-n_remove]
 
-    images_path_00 = glob.glob(path_00 + "/IMG_*.tif")
-    images_path_00.sort()
-    remove_n = 1
-    images_path_00 = images_path_00[remove_n:-remove_n]
+    # List of image path
+    image_path = glob.glob(folderpath + "/IMG_*.tif")
+    image_path.sort()
+    image_path = image_path[n_remove:-n_remove]
 
-    # Opening dark image
-    image_path_dark = glob.glob(path_00 + "/DARK*.tif")
+    # Dark image
+    image_path_dark = glob.glob(folderpath + "/DARK_*.tif")
     image_path_dark.sort()
-    imdark_00, metdark_00 = processing.readTIFF_xiMU(image_path_dark[0])
-
-    # ___________________________________________________________________________
-    # Loop to get roll=off curves
+    imdark, metdark = processing.readTIFF_xiMU(image_path_dark[0])
 
     # Pre-allocation
-    # Figure roll-off
-    fig3 = plt.figure()
-    ax3 = fig3.add_subplot(111)
+    imtotal = np.zeros((imdark.shape[0] // 2, imdark.shape[1] // 2, 3))
 
-    imtotal_00 = np.zeros((imdark_00.shape[0] // 2, imdark_00.shape[1] // 2, 3))
+    rolloff = np.empty((len(image_path), 3))
+    rolloff.fill(np.nan)
 
-    centroids_00 = np.empty((len(images_path_00), 3), dtype=[("y", "float32"), ("x", "float32")])
-    centroids_00.fill(np.nan)
+    std_rolloff = np.empty((len(image_path), 3))
+    std_rolloff.fill(np.nan)
 
-    rolloff_00 = np.empty((len(images_path_00), 3))
-    rolloff_00.fill(np.nan)
+    centroids = np.empty((len(image_path), 3), dtype=[("y", "float32"), ("x", "float32")])
+    centroids.fill(np.nan)
 
-    std_rolloff_00 = np.empty((len(images_path_00), 3))
-    std_rolloff_00.fill(np.nan)
+    for n, path in enumerate(image_path):
 
-    #angles = np.arange(-100, 105, 5)  # changing according to data (readme)
-    angles = np.arange(-105, 110, 5)
-    angles = angles[remove_n:-remove_n]
-
-    fig1, ax1 = plt.subplots(1, 3)
-
-    for n, path in enumerate(images_path_00):
         print("Processing image number {0}".format(n))
 
         # Reading data
         im, met = processing.readTIFF_xiMU(path)
-        im -= imdark_00
+        im -= imdark
 
         print(met["exposure_time_us"])
 
         im_dws = processing.dwnsampling(im, "BGGR", ave=True)
 
-        imtotal_00 += im_dws
+        imtotal += im_dws
 
         for i in range(im_dws.shape[2]):
 
@@ -107,34 +96,77 @@ if __name__ == "__main__":
             bin_im, regprops = processing.regionproperties(im_dws[:, :, i], 0.3E3)
 
             if regprops:
-                centroids_00[n, i] = regprops[0].centroid
+                centroids[n, i] = regprops[0].centroid
                 yc, xc = regprops[0].centroid
                 yc = int(round(yc))
                 xc = int(round(xc))
-                ax1[i].plot(xc, yc, "r+")
 
-                ROI = im_dws[yc-1:yc+2:1, xc-1:xc+2:1, i]
+                axe[i].plot(xc, yc, "r+")
 
-                rolloff_00[n, i] = np.mean(ROI)
-                std_rolloff_00[n, i] = np.std(ROI)
+                ROI = im_dws[yc-2:yc+3:1, xc-2:xc+3:1, i]
+
+                rolloff[n, i] = np.mean(ROI)
+                std_rolloff[n, i] = np.std(ROI)
 
                 print(ROI.shape)
 
-    # Printing results
-    print(rolloff_00)
-    print(std_rolloff_00)
+    imtotal = np.clip(imtotal, 0, 2 ** 12)
+    for n, a in enumerate(axe):
+        a.imshow(imtotal[:, :, n])
+
+    return rolloff, std_rolloff, angles, centroids
+
+
+def plot_rolloff_abs(axe, angle, rolloff, mark, cl, lab=""):
+    if lab:
+        axe.plot(abs(angle), rolloff, marker=mark, markersize=2, color=cl, markerfacecolor="None", linestyle="None",
+                 alpha=0.5, label=lab)
+    else:
+        axe.plot(abs(angle), rolloff, marker=mark, markersize=2, color=cl, markerfacecolor="None", linestyle="None",
+                 alpha=0.5)
+
+
+
+if __name__ == "__main__":
+
+    # *** Code beginning ***
+    processing = cc.ProcessImage()
+
+    # Image directory creation
+    #path_00 = "rolloff"
+    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20191213_2x2"
+    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200117_2x2_02"
+    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200225_2x2_02"
+    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200225_2x2_90_01"
+    #path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200305_2x2_00_02"
+
+    path_00 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200306_2x2_00_02"
+    path_45 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200311/rolloff_proto_2020311_2x2_45"
+    path_90 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200225_2x2_90_01"
+    path_135 = "/Volumes/KINGSTON/Quebec/Prototype/Rolloff/rolloff_proto_air/rolloff_proto_20200311/rolloff_proto_20200311_2x2_135"
+
+    # ___________________________________________________________________________
+    # Getting all roll-off curves
+    # Figure roll-off
+    fig1, ax1 = plt.subplots(1, 3)
+
+    # Roll-off 0 degree azimuth
+    rolloff_00, std_rolloff_00, angles, centroids_00 = processing_img_list(path_00, 1, ax1)
+    rolloff_45, std_rolloff_45, angles_45, centroids_45 = processing_img_list(path_45, 5, ax1)
+    #rolloff_90, std_rolloff_90, angles_90, centroids_90 = processing_img_list(path_90, 1, ax1)
+    rolloff_135, std_rolloff_135, angles_135, centroids_135 = processing_img_list(path_135, 3, ax1)
 
     # Relative standard error
     RSE = std_rolloff_00 / rolloff_00[None, :]
-
     RSE = np.squeeze(RSE)
+
+    print(RSE)
 
     # Normalization of roll-off
     rolloff_00 = rolloff_00 / np.nanmax(rolloff_00, axis=0)
-    print(rolloff_00)
-
-    # Display RSE
-    print(RSE)
+    rolloff_45 = rolloff_45 / np.nanmax(rolloff_45, axis=0)
+    #rolloff_90 = rolloff_90 / np.nanmax(rolloff_90, axis=0)
+    rolloff_135 = rolloff_135 / np.nanmax(rolloff_135, axis=0)
 
     # Sorting roll-off
     ind_sroff = np.tile(np.argsort(abs(angles)), (3, 1)).T
@@ -147,6 +179,9 @@ if __name__ == "__main__":
 
     # ___________________________________________________________________________
     # Fit
+    fig3 = plt.figure()
+    ax3 = fig3.add_subplot(111)
+
     xdata = np.linspace(0, 105, 1000)
     col = ["r", "g", "b"]
     bandnames = {"r": "red channel", "g": "green channel", "b": "blue channel"}
@@ -178,11 +213,6 @@ if __name__ == "__main__":
 
     # ___________________________________________________________________________
     # Figure configuration
-    # Figure 1 - Image of output port of integrating sphere
-    imtotal_00 = np.clip(imtotal_00, 0, 2**12)
-
-    for j in range(imtotal_00.shape[2]):
-        ax1[j].imshow(imtotal_00[:, :, j])
 
     # Figure 2 - Shape of the roll-off curves with relative angle
     fig2 = plt.figure()
@@ -211,6 +241,26 @@ if __name__ == "__main__":
     ax3.set_ylabel("Roll-off")
 
     ax3.legend(loc="best")
+
+    # Figure 4 - Roll-off for all azimuth angle
+    fig4 = plt.figure()
+    ax4 = fig4.add_subplot(111)
+    cllist = ["r", "g", "b"]
+
+    for i in range(3):
+        if i == 0:
+            plot_rolloff_abs(ax4, abs(angles), rolloff_00[:, i], "o", cllist[i], lab="0˚ azimuth")
+            plot_rolloff_abs(ax4, abs(angles_45), rolloff_45[:, i], "s", cllist[i], lab="45˚ azimuth")
+            plot_rolloff_abs(ax4, abs(angles_135), rolloff_135[:, i], "<", cllist[i], lab="135˚ azimuth")
+
+        else:
+            plot_rolloff_abs(ax4, abs(angles), rolloff_00[:, i], "o", cllist[i])
+            plot_rolloff_abs(ax4, abs(angles_45), rolloff_45[:, i], "s", cllist[i])
+            plot_rolloff_abs(ax4, abs(angles_135), rolloff_135[:, i], "<", cllist[i])
+
+    ax4.set_xlabel("Angles from optical axis [˚]")
+    ax4.set_ylabel("Roll-off")
+    ax4.legend(loc="best")
 
     # ___________________________________________________________________________
     # Saving calibration data

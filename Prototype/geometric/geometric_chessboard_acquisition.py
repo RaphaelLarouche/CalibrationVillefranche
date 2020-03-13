@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # Take image instance
     camera_object = cc.TakeImage(imageformat="color24bits")
 
-    exp_time = 27000  # microseconds
+    exp_time = 15000  # microseconds
     binning = "2x2"  # CMOS binning
     image_number = 30  # Number of image, to be changed
     #image_number = 5
@@ -62,6 +62,7 @@ if __name__ == "__main__":
     ax1 = fig1.add_subplot(111)
 
     for i in range(image_number):
+        print("Image number {0} out of {1} ".format(i+1, image_number))
         for tim in range(timeinter, 0, -1):
                  time.sleep(1)
                  print("%02d seconds until next acquisition..." % tim)

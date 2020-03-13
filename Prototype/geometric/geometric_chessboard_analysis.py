@@ -24,7 +24,8 @@ if __name__ == "__main__":
     #path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20191211_2152.mat" # After moving CMOS !!!
     #path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20191211_1714.mat"  # Before moving CMOS !!!
     #path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20200218_2304.mat"
-    path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20200220_1908.mat"
+    #path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20200220_1908.mat"
+    path_air = "matlab_fisheye_calibrationfiles_cb_air/fisheyeParams_20200306_1611.mat"
     #path_water = "matlab_fisheye_calibrationfiles_cb_water/fisheyeParams_20201212_1721.mat"
     path_water = "matlab_fisheye_calibrationfiles_cb_water/fisheyeParams_20200225_2052.mat"
 
@@ -42,6 +43,7 @@ if __name__ == "__main__":
     print(intrinsics_air)
 
     distortion_center_a = intrinsics_air["DistortionCenter"][0][0]
+    print(distortion_center_a)
     distortion_center_w = intrinsics_water["DistortionCenter"][0][0]
 
     print(distortion_center_a.shape)

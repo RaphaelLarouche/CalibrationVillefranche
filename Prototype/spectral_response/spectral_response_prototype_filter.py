@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Python script to process data taken with spectrophotometer Perkin Elmer Lambda 850 and retrieve relative spectral
-response of the prototype.
+response of the prototype. 2 nm beam bandwidth and short step (5 nm or 1 nm).
 """
 
 if __name__ == "__main__":
