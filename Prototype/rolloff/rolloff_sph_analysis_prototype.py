@@ -110,11 +110,7 @@ def processing_img_list(folderpath, n_remove, axe):
 
                 print(ROI.shape)
 
-    imtotal = np.clip(imtotal, 0, 2 ** 12)
-    for n, a in enumerate(axe):
-        a.imshow(imtotal[:, :, n])
-
-    return rolloff, std_rolloff, angles, centroids
+    return rolloff, std_rolloff, angles, centroids, imtotal
 
 
 def plot_rolloff_abs(axe, angle, rolloff, mark, cl, lab=""):
@@ -151,10 +147,17 @@ if __name__ == "__main__":
     fig1, ax1 = plt.subplots(1, 3)
 
     # Roll-off 0 degree azimuth
-    rolloff_00, std_rolloff_00, angles, centroids_00 = processing_img_list(path_00, 1, ax1)
-    rolloff_45, std_rolloff_45, angles_45, centroids_45 = processing_img_list(path_45, 5, ax1)
+    rolloff_00, std_rolloff_00, angles_00, centroids_00, imtotal_00 = processing_img_list(path_00, 1, ax1)
+    rolloff_45, std_rolloff_45, angles_45, centroids_45, imtotal_45 = processing_img_list(path_45, 5, ax1)
     #rolloff_90, std_rolloff_90, angles_90, centroids_90 = processing_img_list(path_90, 1, ax1)
-    rolloff_135, std_rolloff_135, angles_135, centroids_135 = processing_img_list(path_135, 3, ax1)
+    rolloff_135, std_rolloff_135, angles_135, centroids_135, imtotal_135 = processing_img_list(path_135, 3, ax1)
+
+    # Plotting imtotal
+    imtot = imtotal_00 + imtotal_45 + imtotal_135
+
+    imtot = np.clip(imtot, 0, 2 ** 12)
+    for n, a in enumerate(ax1):
+        a.imshow(imtot[:, :, n])
 
     # Relative standard error
     RSE = std_rolloff_00 / rolloff_00[None, :]
@@ -169,11 +172,11 @@ if __name__ == "__main__":
     rolloff_135 = rolloff_135 / np.nanmax(rolloff_135, axis=0)
 
     # Sorting roll-off
-    ind_sroff = np.tile(np.argsort(abs(angles)), (3, 1)).T
+    ind_sroff = np.tile(np.argsort(abs(angles_00)), (3, 1)).T
 
     print(ind_sroff[:, 0])
 
-    sangle = np.sort(abs(angles))
+    sangle = np.sort(abs(angles_00))
     sroff = np.take_along_axis(rolloff_00, ind_sroff, axis=0)
     sRSE = np.take_along_axis(RSE,  ind_sroff, axis=0)
 
@@ -189,7 +192,7 @@ if __name__ == "__main__":
 
     for n in range(rolloff_00.shape[1]):
         val = rolloff_00[:, n]
-        ang = abs(angles)
+        ang = abs(angles_00)
 
         mask = ~np.isnan(val)
 
@@ -218,9 +221,9 @@ if __name__ == "__main__":
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111)
 
-    ax2.errorbar(angles, rolloff_00[:, 0], RSE[:, 0], alpha=0.5, color="r", label="Red channel")
-    ax2.errorbar(angles, rolloff_00[:, 1], RSE[:, 1], alpha=0.5, color="g", label="Green channel")
-    ax2.errorbar(angles, rolloff_00[:, 2], RSE[:, 2], alpha=0.5, color="b", label="Blue channel")
+    ax2.errorbar(angles_00, rolloff_00[:, 0], RSE[:, 0], alpha=0.5, color="r", label="Red channel")
+    ax2.errorbar(angles_00, rolloff_00[:, 1], RSE[:, 1], alpha=0.5, color="g", label="Green channel")
+    ax2.errorbar(angles_00, rolloff_00[:, 2], RSE[:, 2], alpha=0.5, color="b", label="Blue channel")
 
     ax2.set_xlabel("Angles [˚]")
     ax2.set_ylabel("Roll-off relative to maximum")
@@ -229,13 +232,13 @@ if __name__ == "__main__":
 
     # Figure 3 - Roll-off with absolute angle
 
-    ax3.plot(abs(angles), rolloff_00[:, 0], "ro", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1)
-    ax3.plot(abs(angles), rolloff_00[:, 1], "go", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1)
-    ax3.plot(abs(angles), rolloff_00[:, 2], "bo", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1)
+    ax3.plot(abs(angles_00), rolloff_00[:, 0], "ro", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1)
+    ax3.plot(abs(angles_00), rolloff_00[:, 1], "go", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1)
+    ax3.plot(abs(angles_00), rolloff_00[:, 2], "bo", alpha=0.5, markersize=4, markerfacecolor="None", markeredgewidth=1)
 
-    ax3.errorbar(abs(angles), rolloff_00[:, 0], RSE[:, 0], linestyle="None", alpha=0.5, color="r")
-    ax3.errorbar(abs(angles), rolloff_00[:, 1], RSE[:, 1], linestyle="None", alpha=0.5, color="g")
-    ax3.errorbar(abs(angles), rolloff_00[:, 2], RSE[:, 2], linestyle="None", alpha=0.5, color="b")
+    ax3.errorbar(abs(angles_00), rolloff_00[:, 0], RSE[:, 0], linestyle="None", alpha=0.5, color="r")
+    ax3.errorbar(abs(angles_00), rolloff_00[:, 1], RSE[:, 1], linestyle="None", alpha=0.5, color="g")
+    ax3.errorbar(abs(angles_00), rolloff_00[:, 2], RSE[:, 2], linestyle="None", alpha=0.5, color="b")
 
     ax3.set_xlabel("Angles from optical axis [˚]")
     ax3.set_ylabel("Roll-off")
@@ -249,12 +252,12 @@ if __name__ == "__main__":
 
     for i in range(3):
         if i == 0:
-            plot_rolloff_abs(ax4, abs(angles), rolloff_00[:, i], "o", cllist[i], lab="0˚ azimuth")
+            plot_rolloff_abs(ax4, abs(angles_00), rolloff_00[:, i], "o", cllist[i], lab="0˚ azimuth")
             plot_rolloff_abs(ax4, abs(angles_45), rolloff_45[:, i], "s", cllist[i], lab="45˚ azimuth")
             plot_rolloff_abs(ax4, abs(angles_135), rolloff_135[:, i], "<", cllist[i], lab="135˚ azimuth")
 
         else:
-            plot_rolloff_abs(ax4, abs(angles), rolloff_00[:, i], "o", cllist[i])
+            plot_rolloff_abs(ax4, abs(angles_00), rolloff_00[:, i], "o", cllist[i])
             plot_rolloff_abs(ax4, abs(angles_45), rolloff_45[:, i], "s", cllist[i])
             plot_rolloff_abs(ax4, abs(angles_135), rolloff_135[:, i], "<", cllist[i])
 
