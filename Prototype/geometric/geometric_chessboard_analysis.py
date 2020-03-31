@@ -3,19 +3,46 @@
 
 """
 
+# Importation of standard modules
+import numpy as np
+import glob
+import matplotlib.pyplot as plt
+import scipy.io
+import cv2
+import json
+from matplotlib import rc
+
+# Importation of other modules
+import cameracontrol.cameracontrol as cc
+
+# Function
+def projection_errors(fisheyeParams):
+
+    # Finding radial distance from center of each reprojected points
+    reprojection_points = fisheyeParams["ReprojectedPoints"][0][0]
+    intrinsics = fisheyeParams["Intrinsics"][0][0]
+    distortion_center = intrinsics["DistortionCenter"][0][0]
+    xcenter, ycenter = distortion_center[0, 0], distortion_center[0, 1]
+
+    radial_distance = np.sqrt((reprojection_points[:, 0, :] - xcenter)**2 + (reprojection_points[:, 1, :] - ycenter)**2)
+
+    # Reprojection mean error per image (eucledian distance between corners detected and reprojections)
+    reprojection_error = fisheyeParams["ReprojectionErrors"][0][0]
+    reprojection_error_x = reprojection_error[:, 0, :]
+    reprojection_error_y = reprojection_error[:, 1, :]
+
+    eucledian_error = np.sqrt(reprojection_error_x**2 + reprojection_error_y**2)
+
+    mean_x = np.mean(reprojection_error_x, axis=0)
+    mean_y = np.mean(reprojection_error_y, axis=0)
+    mean_e = np.mean(eucledian_error, axis=0)
+
+    fitted_points = reprojection_points + reprojection_error
+    radial_distance_fitted_points = np.sqrt((fitted_points[:, 0, :] - xcenter)**2 + (fitted_points[:, 1, :] - ycenter)**2)
+
+    return radial_distance, radial_distance_fitted_points, mean_x, mean_y, mean_e, eucledian_error
+
 if __name__ == "__main__":
-
-    # Importation of standard modules
-    import numpy as np
-    import glob
-    import matplotlib.pyplot as plt
-    import scipy.io
-    import cv2
-
-    # Importation of other modules
-    import cameracontrol.cameracontrol as cc
-
-    # Function
 
     # *** Code beginning ***
     processing = cc.ProcessImage()
@@ -34,9 +61,12 @@ if __name__ == "__main__":
     fisheyeParams_water = scipy.io.loadmat(path_water)
 
     # Extracting data
+
+    # Fisheye parameters
     fisheyeParams_air = fisheyeParams_air["fisheyeParams"]
     fisheyeParams_water = fisheyeParams_water["fisheyeParams"]
 
+    # Intrinsics
     intrinsics_air = fisheyeParams_air["Intrinsics"][0][0]
     intrinsics_water = fisheyeParams_water["Intrinsics"][0][0]
 
@@ -76,6 +106,48 @@ if __name__ == "__main__":
     radial_data = np.linspace(0, 400, 1000)
 
     # ___________________________________________________________________________
+    # Derivative of projection functions
+    derivative_air = np.gradient(processing.polynomial_fit_forcedzero(radial_data, *popt_a), radial_data)
+    derivative_water = np.gradient(processing.polynomial_fit_forcedzero(radial_data, *popt_w), radial_data)
+
+    # ___________________________________________________________________________
+    # Reprojection errors
+    rd_air, rd_air_fitted, _, _, mean_e_air, e_air = projection_errors(fisheyeParams_air)
+    rd_water, rd_water_fitted, _, _, mean_e_water, e_water = projection_errors(fisheyeParams_water)
+
+    # Average reprojection error
+    total_error_air = np.mean(mean_e_air)
+    total_error_water = np.mean(mean_e_water)
+
+    # Interpolation of gradient at each position
+    grad_air = np.interp(rd_air, radial_data, derivative_air)
+    grad_water = np.interp(rd_water, radial_data, derivative_water)
+
+    # Angular error according to gradient
+    error_grad_air = grad_air * e_air
+    error_grad_water = grad_water * e_water
+
+    # Angular error according to radial distance of fitted points vs. radial distance of reprojected points
+    error_deg_air = abs(processing.polynomial_fit_forcedzero(rd_air_fitted, *popt_a) - processing.polynomial_fit_forcedzero(rd_air, *popt_a))
+    error_deg_water = abs(processing.polynomial_fit_forcedzero(rd_water_fitted, *popt_w) - processing.polynomial_fit_forcedzero(rd_water, *popt_w))
+
+    # MOVING AVERAGE !
+    error_deg_air = error_deg_air.ravel()
+    error_deg_water = error_deg_water.ravel()
+
+    i_rd_air_sorted = np.argsort(rd_air.ravel())
+    rd_air_sorted = rd_air.ravel()[i_rd_air_sorted]
+    error_deg_air = error_deg_air[i_rd_air_sorted]
+
+    i_rd_water_sorted = np.argsort(rd_water.ravel())
+    rd_water_sorted = rd_water.ravel()[i_rd_water_sorted]
+    error_deg_water = error_deg_water[i_rd_water_sorted]
+
+    N = 30
+    error_deg_air_movingavg = np.convolve(error_deg_air, np.ones((N,))/N, mode='valid')
+    error_deg_water_movingavg = np.convolve(error_deg_water, np.ones((N,))/N, mode='valid')
+
+    # ___________________________________________________________________________
     # Fitting limits of Field of view
 
     figfov, axfov = plt.subplots(1, 2)
@@ -107,7 +179,7 @@ if __name__ == "__main__":
             axfov[i].imshow(thres, "gray")
             axfov[i].set_title(titles[i])
 
-        plt.pause(1)
+        #plt.pause(1)
 
     plt.ioff()
 
@@ -131,9 +203,9 @@ if __name__ == "__main__":
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111)
 
-    ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_a), color="#1f77b4", linewidth=1.5, label="Chessboard calibration air")
+    ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_a), color="#1f77b4", linewidth=1.5, label="Air calibration")
     ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_a) * 1/1.33, color="k", linewidth=1.5)
-    ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_w), color="#ff7f0e", linewidth=1.5, label="Chessboard calibration water")
+    ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_w), color="#ff7f0e", linewidth=1.5, label="Water calibration")
     #ax2.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_a)*1/1.33, 'r-.')
 
     ax2.axvline(estimate_limit_rad[0], 0, 130, linestyle="--", color="#1f77b4")
@@ -144,12 +216,85 @@ if __name__ == "__main__":
     ax2.text(40, FOVair + 2, "{:.2f} FOV".format(FOVair))
     ax2.text(40, FOVwater + 2, "{:.2f} FOV".format(FOVwater))
 
-    ax2.set_xlim([0, 400])
+    ax2.set_xlim([0, 350])
 
     ax2.set_xlabel("Radial position from image center [px]")
     ax2.set_ylabel("Scene angle [˚]")
 
     ax2.legend(loc="best")
+
+    # Reprojection error in function of radial position
+
+    fig3 = plt.figure()
+    ax3 = fig3.add_subplot(111)
+
+    colorb = 'tab:blue'
+    ax3.scatter(rd_air, e_air, color=colorb, label="air average error {:.3f} px".format(total_error_air))
+    ax3.set_xlabel("Distance from center [px]")
+    ax3.set_ylabel("Reprojection error [px]", color=colorb)
+    ax3.tick_params(axis='y', labelcolor=colorb)
+    ax3.legend(loc="best")
+
+    colorr = 'tab:red'
+    ax3_twin = ax3.twinx()
+    ax3_twin.scatter(rd_air, error_grad_air, color=colorr)
+    ax3_twin.set_ylabel("Reprojection error [˚]", color=colorr)
+    ax3_twin.tick_params(axis='y', labelcolor=colorr)
+
+    fig4 = plt.figure()
+    ax4 = fig4.add_subplot(111)
+
+    ax4.scatter(rd_water, e_water, color=colorb, label="water average error {:.3f} px".format(total_error_water))
+    ax4.set_xlabel("Distance from center [px]")
+    ax4.set_ylabel("Reprojection error [px]", color=colorb)
+    ax4.tick_params(axis="y", labelcolor=colorb)
+    ax4.legend(loc="best")
+
+    ax4_twin = ax4.twinx()
+    ax4_twin.scatter(rd_water, error_grad_water, color=colorr)
+    ax4_twin.set_ylabel("Reprojection error [˚]", color=colorr)
+    ax4_twin.tick_params(axis='y', labelcolor=colorr)
+
+    # Gradient
+    fig5 = plt.figure()
+    ax5 = fig5.add_subplot(111)
+
+    ax5.plot(radial_data, derivative_air, label="Air")
+    ax5.plot(radial_data, derivative_water, label="Water")
+
+    ax5.set_xlim([0, 350])
+
+    ax5.set_xlabel("Distance from center [px]")
+    ax5.set_ylabel(r"Gradient $d{\theta}/dr$ [˚/px]")
+
+    ax5.legend(loc="best")
+
+    # Error from radial distance between fitted points and reprojected points
+    fig6 = plt.figure()
+    ax6 = fig6.add_subplot(111)
+
+    ax6.scatter(rd_air_sorted, error_deg_air, s=4, label="Angular error for target in air")
+    ax6.plot(rd_air_sorted[N//2-1:-N//2], error_deg_air_movingavg, "r", alpha=0.8, linewidth=3, label="Moving average using {} values".format(N))
+    ax6.set_yscale("log")
+    ax6.set_ylim([0.0001, 10])
+
+    ax6.set_xlabel("Distance from center [px]")
+    ax6.set_ylabel("Reprojection error [˚]")
+
+    ax6.legend(loc="best")
+
+    fig7 = plt.figure()
+    ax7 = fig7.add_subplot(111)
+
+    ax7.scatter(rd_water_sorted, error_deg_water, s=4, label="Angular error for target in water")
+    ax7.plot(rd_water_sorted[N//2-1:-N//2], error_deg_water_movingavg, "r", alpha=0.8, linewidth=3, label="Moving average using {} values".format(N))
+    ax7.set_yscale("log")
+    ax7.set_ylim([0.0001, 10])
+
+    ax7.set_xlabel("Distance from center [px]")
+    ax7.set_ylabel("Reprojection error [˚]")
+
+    ax7.legend(loc="best")
 
     # ___________________________________________________________________________
     # Saving geometric calibration data
@@ -173,6 +318,5 @@ if __name__ == "__main__":
 
         np.savez(savename_w, imagesize=np.squeeze(imsize_w), centerpoint=np.squeeze(distortion_center_w),
                  fitparams=np.squeeze(popt_w))
-
 
     plt.show()
