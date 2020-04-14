@@ -16,13 +16,26 @@ from matplotlib import rc
 import cameracontrol.cameracontrol as cc
 
 # Function
+def projection(radial_distance, projectiontype="equisolid"):
+    if projectiontype == "equisolid":
+        angle = 2 * np.arcsin(radial_distance/(2*173))
+
+    angle *= 180 / np.pi
+
+    return angle
+
 def projection_errors(fisheyeParams):
+    """
+    Function to outputted the radial distance of chessboard points (relative to center) detected and  reprojected.
+
+    :param fisheyeParams: Data which is a Matlab Structure containing all paramters related to the fisheye calibration.
+    :return: (radial_distance - reprojection points, radial_distance_fitted_points - corner detection algorithm)
+    """
 
     # Finding radial distance from center of each reprojected points
     reprojection_points = fisheyeParams["ReprojectedPoints"][0][0]
     intrinsics = fisheyeParams["Intrinsics"][0][0]
-    distortion_center = intrinsics["DistortionCenter"][0][0]
-    xcenter, ycenter = distortion_center[0, 0], distortion_center[0, 1]
+    xcenter, ycenter = intrinsics["DistortionCenter"][0][0][0, 0], intrinsics["DistortionCenter"][0][0][0, 1]
 
     radial_distance = np.sqrt((reprojection_points[:, 0, :] - xcenter)**2 + (reprojection_points[:, 1, :] - ycenter)**2)
 
@@ -193,6 +206,7 @@ if __name__ == "__main__":
     ax1.plot(theta_rho_w[:, 0], abs(theta_rho_w[:, 1]), 'o')
     ax1.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_a))
     ax1.plot(radial_data, processing.polynomial_fit_forcedzero(radial_data, *popt_w))
+    ax1.plot(radial_data, projection(radial_data))
 
     ax1.set_xlim([0, 400])
 
