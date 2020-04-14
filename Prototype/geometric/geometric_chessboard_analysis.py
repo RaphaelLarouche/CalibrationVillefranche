@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-
+Analysis of results of geometric calibration of the PROTOTYPE using a chessboard target.
 """
 
 # Importation of standard modules
@@ -20,9 +20,8 @@ def projection(radial_distance, projectiontype="equisolid"):
     if projectiontype == "equisolid":
         angle = 2 * np.arcsin(radial_distance/(2*173))
 
-    angle *= 180 / np.pi
+    return angle * 180 / np.pi
 
-    return angle
 
 def projection_errors(fisheyeParams):
     """
@@ -54,6 +53,7 @@ def projection_errors(fisheyeParams):
     radial_distance_fitted_points = np.sqrt((fitted_points[:, 0, :] - xcenter)**2 + (fitted_points[:, 1, :] - ycenter)**2)
 
     return radial_distance, radial_distance_fitted_points, mean_x, mean_y, mean_e, eucledian_error
+
 
 if __name__ == "__main__":
 
