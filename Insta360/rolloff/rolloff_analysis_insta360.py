@@ -1,22 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-Python file to performed roll-off experiment data analysis.
+Python file to performed roll-off experiment data analysis. This roll-off calibration is using experimental setup at
+Villefranche-sur-Mer radiometric lab.
 """
 
+# Importation of standard module
+import numpy as np
+import matplotlib.pyplot as plt
+import glob
+import os
+from scipy.io import loadmat
+import time
+
+# Importation of other modules
+import cameracontrol.cameracontrol as cc
+
+
+# Functions
+def rolloff_matlab(x, a1, a2, a3):
+    return 1 + a1 * (x ** 2) + a2 * (x ** 4) + a3 * (x ** 6)
+
+
 if __name__ == "__main__":
-    # Importation of standard module
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import glob
-    import os
-    from scipy.io import loadmat
-    import time
-
-    # Importation of other modules
-    import cameracontrol.cameracontrol as cc
-
-    def rolloff_matlab(x, a1, a2, a3):
-        return 1 + a1*(x**2) + a2*(x**4) + a3*(x**6)
 
     # *** Code beginning ***
     # Creating object from class ProcessImage
@@ -138,7 +143,7 @@ if __name__ == "__main__":
 
     list_axe = [ax1, ax2, ax3]
 
-    deltadeg = 5
+    deltadeg = 5  # 5 degrees around the current point
     # Main loop to for image processing
     for n, path in enumerate(zip(image_path_00, image_path_90)):
         print("Processing image number {0}".format(n))
