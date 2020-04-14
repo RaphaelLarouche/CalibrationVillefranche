@@ -3,18 +3,19 @@
 Python file to performed geometric experiment analysis for Insta360 ONE camera.
 """
 
+# Importation of standard modules
+import matplotlib.pyplot as plt
+import numpy as np
+import glob
+from scipy import stats
+import pandas
+from scipy.optimize import minimize
+
+# Importation of other modules
+import cameracontrol.cameracontrol as cc
+
 if __name__ == "__main__":
 
-    # Importation of standard modules
-    import matplotlib.pyplot as plt
-    import numpy as np
-    import glob
-    from scipy import stats
-    import pandas
-    from scipy.optimize import minimize
-
-    # Importation of other modules
-    import cameracontrol.cameracontrol as cc
 
     # *** Code beginning ***
     # Processing object
