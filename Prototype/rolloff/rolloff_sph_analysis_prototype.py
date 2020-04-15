@@ -14,21 +14,6 @@ import cameracontrol.cameracontrol as cc
 
 
 # Functions
-def roff_fitcurve(x, a0, a2, a4, a6, a8):
-    """
-    Roll-off fitting function.
-
-    :param x: radial position from optical center
-    :param a0:
-    :param a2:
-    :param a4:
-    :param a6:
-    :param a8:
-    :return:
-    """
-    return a0 + a2 * x ** 2 + a4 * x ** 4 + a6 * x ** 6 + a8 * x ** 8
-
-
 def disp_roll_fitcurve(popt, perr):
     """
     Function to print roll-off fitting results.
