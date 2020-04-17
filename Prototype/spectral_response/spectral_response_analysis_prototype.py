@@ -6,25 +6,24 @@ sensor using spectrophotometer.
 
 """
 
+#  Importation of standard modules
+
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import glob
+import pandas
+import matplotlib.patches as patches
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+from scipy.signal import chirp, find_peaks, peak_widths
+
+# Importation of other modules
+import cameracontrol.cameracontrol as cc
+
+# Function
+
 if __name__ == "__main__":
-
-    #  Importation of standard modules
-
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import os
-    import glob
-    import pandas
-    import matplotlib.patches as patches
-    from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
-    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-    from scipy.signal import chirp, find_peaks, peak_widths
-
-    # Importation of other modules
-    import cameracontrol.cameracontrol as cc
-
-    # Function
-
     # ___________________________________________________________________________
     # *** Code beginning ***
 
