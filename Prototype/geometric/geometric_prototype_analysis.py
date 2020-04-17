@@ -3,46 +3,48 @@
 Python file to perform geometric experiment analysis.
 """
 
+# Importation of standard modules
+import matplotlib.pyplot as plt
+import numpy as np
+import glob
+from scipy import stats
+import os
+from scipy.optimize import minimize
+
+# Importation of other modules
+import cameracontrol.cameracontrol as cc
+
+
+# Function
+def residuals(theo_angles, fitted_angles, verbose=True):
+    """
+    Function that retrieves and print the residual of the fitted angles.
+    :param theo_angles:
+    :param fitted_angles:
+    :return: linear regression parameters
+    """
+
+    shap = theo_angles.shape
+
+    ta = abs(theo_angles.reshape(-1))
+    fa = abs(fitted_angles.reshape(-1))
+
+    linearfit = stats.linregress(ta[np.isfinite(ta)], fa[np.isfinite(fa)])
+
+    ta = ta.reshape((-1, shap[1]))
+    fa = fa.reshape((-1, shap[1]))
+
+    residuals = abs(fa - (ta * linearfit[0] + linearfit[1]))
+
+    if verbose:
+        print("Residuals")
+        print(residuals)
+        print("Average residuals")
+        print(np.nanmean(residuals, axis=0))
+    return linearfit
+
+
 if __name__ == "__main__":
-
-    # Importation of standard modules
-    import matplotlib.pyplot as plt
-    import numpy as np
-    import glob
-    from scipy import stats
-    import os
-    from scipy.optimize import minimize
-
-    # Importation of other modules
-    import cameracontrol.cameracontrol as cc
-
-    # Function
-    def residuals(theo_angles, fitted_angles, verbose=True):
-        """
-        Function that retrieves and print the residual of the fitted angles.
-        :param theo_angles:
-        :param fitted_angles:
-        :return: linear regression parameters
-        """
-
-        shap = theo_angles.shape
-
-        ta = abs(theo_angles.reshape(-1))
-        fa = abs(fitted_angles.reshape(-1))
-
-        linearfit = stats.linregress(ta[np.isfinite(ta)], fa[np.isfinite(fa)])
-
-        ta = ta.reshape((-1, shap[1]))
-        fa = fa.reshape((-1, shap[1]))
-
-        residuals = abs(fa - (ta * linearfit[0] + linearfit[1]))
-
-        if verbose:
-            print("Residuals")
-            print(residuals)
-            print("Average residuals")
-            print(np.nanmean(residuals, axis=0))
-        return linearfit
 
     # *** Code beginning ***
     # Processing object
